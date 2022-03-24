@@ -14,7 +14,6 @@
                       Keysight IO Libraries Suite (download from keysight)
 - WIP:
   possibly find way to put waveform generator in high-z mode
-  build handling for more than two device objects
 """
 import pyvisa                       #needed to communicate with lab equipment 
 import matplotlib.pyplot as plotter #needed to plot measurements
@@ -60,18 +59,23 @@ def acquire_devices():
 #returns device identifier
 def identify_device(device,i):
     sleep(1)
-    device_info = device[i].query("*IDN?")          #query which returns device info
-    if device_info.find("EDU33212A") != -1:         #if waveform generator P/N is returned
-        device_id = "Waveform Generator"            #device is waveform generator
-        print("Waveform Generator is device", i)
-    elif device_info.find("34470A") != -1:          #if multimeter P/N is returned
-        device_id = "Multimeter"                    #device is multimeter
-        print("Multimeter is device", i)
-    else:                                           #if device isn't necessary for this
-        device_id = "Mystery"                       #return mystery device
-        print("Device %d is a mystery device" % i)
-    sleep(1)
-    return device_id                                #return the device id
+    device_temp = str(device[i])
+    if device_temp.find("USB") != -1:
+        device_info = device[i].query("*IDN?")          #query which returns device info
+        if device_info.find("EDU33212A") != -1:         #if waveform generator P/N is returned
+            device_id = "Waveform Generator"            #device is waveform generator
+            print("Waveform Generator is device", i)
+        elif device_info.find("34470A") != -1:          #if multimeter P/N is returned
+            device_id = "Multimeter"                    #device is multimeter
+            print("Multimeter is device", i)
+        else:                                           #if device isn't necessary for this
+            device_id = "idfk"                          #return mystery device
+            print("Device %d is a mystery device" % i)
+        sleep(1)
+    else:
+        print("Device %d is a mystery device" % i)      #if device is not a usb device
+        device_id = "idfk"                              #return mystery device
+    return device_id                                    #return device id
 
 #sets up waveform generator.
 #sets waveform parameters to good starting values
@@ -251,6 +255,7 @@ resource_manager = pyvisa.ResourceManager()
 
 #necessary global variables can be found here
 device = []                             #device object list, used for benchtop instruments
+device_count = 0                        #keeps count of usb devices found
 input_wave_amplitude = 0.001            #minimum amplitude of wave in waveform generator
 vgs_sweep = []                          #vgs_sweep values list
 vds_sweep = []                          #vds_sweep values list
@@ -267,10 +272,15 @@ for i in range(len(device)):                        #for all devices
     temp_device = identify_device(device,i)         #use device object identifier function
     if temp_device.find("Waveform Generator") != -1:#if waveform generator is identified device
         waveform_generator = i                      #waveform generator is device object i
+        device_count = device_count + 1             #increment device count
     elif temp_device.find("Multimeter") != -1:      #if multimeter is identified object
         multimeter = i                              #multimeter is device object i
+        device_count = device_count + 1             #increment device count
     else:                                           #if it is a mystery device
         continue                                    #this iteration doesn't matter
+if device_count < 2:                                #close program if there aren't enough devices
+    print("One or more devices missing. Consult previous output to identify which is missing")
+    exit()
 print("Device Identification Complete")
 sleep(1)
 
