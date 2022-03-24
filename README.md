@@ -1,6 +1,8 @@
 # SPARK
 Semiconductor Parameter Analyzer Replacement Kit
 
+Tested and functional in Coover 2046
+
 Goal is to replace the super expensive, super scary B1500A with benchtop equipment and a python script for purposes of EE330.
 
 Should be able to measure MOSFET drain current across a sweep of drain-source
