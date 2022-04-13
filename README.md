@@ -3,12 +3,18 @@ Semiconductor Parameter Analyzer Replacement Kit
 
 Tested and functional in Coover 2046
 
-Goal is to replace the super expensive, super scary B1500A with benchtop equipment and a python script for purposes of EE330.
+Goal is to replace the B1500A with benchtop equipment and a python script for purposes of EE330.
 
 Should be able to measure MOSFET drain current across a sweep of drain-source
 voltages with different gate-source voltages when complete.
 
-Test setup is an inverting feedback op amp where input resistor is MOSFET under test.
+Test setup is an inverting feedback op amp where input resistor is MOSFET under test. This should create a transimpedance amplifier.
+
+![image](https://user-images.githubusercontent.com/43865671/163257094-adf9283a-c8a7-4f61-a475-9898fdb19641.png)
+
+Source: Wikipedia
+
+In this case, I_in is I_d of the MOSFET under test.
 
 Output voltage is measured using multimeter, and is a function of drain current and feedback resistor.
 
@@ -19,6 +25,11 @@ Equipment used:
     - Channel one drives MOSFET drain
     - Channel two drives MOSFET gate
 - Keysight 34470A Multimeter
+- MOSFET to test
+- Breadboard or other prototyping platform
+- Op amp limited to +-10V output (LM324, TL082)
+- Feedback resistor (3.3kohm worked well in testing)
+- Assorted jumper wires as needed
                 
 Software Needed:
 - Python 3.10
