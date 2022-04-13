@@ -5,6 +5,8 @@
 - Uses lab equipment SCPI commandset to measure 
   MOSFET drain current as a function of drain-source
   voltage across multiple gate-source voltages.
+  Test setup uses MOSFET as input resistor in transresistance amp
+  configuration with operational amplifier.
   Plots output and dumps to .txt file
 - Necesary equipment: Keysight EDU32212A Waveform Generator
                       Keysight 34470A Multimeter
@@ -256,12 +258,13 @@ resource_manager = pyvisa.ResourceManager()
 #necessary global variables can be found here
 device = []                             #device object list, used for benchtop instruments
 device_count = 0                        #keeps count of usb devices found
-input_wave_amplitude = 0.001            #minimum amplitude of wave in waveform generator
+input_wave_amplitude = 0.002            #minimum amplitude of wave in waveform generator
 vgs_sweep = []                          #vgs_sweep values list
 vds_sweep = []                          #vds_sweep values list
 res = 0                                 #feedback resistor in test setup
 id_reading = []                         #list with drain current reading and associated voltages
 output_file = open("ID_VDS_MEASUREMENTS.txt", "w")  #dump file for measurements
+vos = 0                                 #variable for amplifier offset voltage
 
 #find devices and populate device object list
 device = acquire_devices()
