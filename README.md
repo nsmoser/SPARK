@@ -10,9 +10,7 @@ voltages with different gate-source voltages when complete.
 
 Test setup is an inverting feedback op amp where input resistor is MOSFET under test. This should create a transimpedance amplifier.
 
-![image](https://user-images.githubusercontent.com/43865671/163258028-b3a43456-c956-43b3-a204-8a6fe2e1c4d6.png)
-
-Source: Wikipedia
+![image](https://user-images.githubusercontent.com/43865671/163258146-f7baac5b-4eef-4d87-850a-681ef50cbdfb.png)
 
 In this case, I_in is I_d of the MOSFET under test.
 
