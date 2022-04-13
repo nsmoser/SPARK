@@ -18,6 +18,10 @@ Output voltage is measured using multimeter, and is a function of drain current 
 
 v_out = i_d\*r_f -> i_d = v_out/r_f
 
+There is some error in measurement attributed both to the accuracy of the waveform generator and how good the op amp is
+
+However, in testing I never noticed more than a 2.6% error from the B1500A measured values, with an average error in the 1% range.
+
 Equipment used:
 - Keysight EDU32212A Waveform Generator
     - Channel one drives MOSFET drain
