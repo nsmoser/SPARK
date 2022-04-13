@@ -37,3 +37,9 @@ Good References:
     - Note: The keysight reference for waveform generators sucks. This isn't a keysight device, but is much more readable and applicable
 
 - SCPI Multimeter Reference (https://rfmw.em.keysight.com/bihelpfiles/Truevolt/WebHelp/US/Content/_Home_Page/SCPI%20%20Welcome.htm)
+
+Any debugging for this script can usually be traced back to an issue with PyVISA. 
+
+Python and PyVISA offer pretty good debugging information, so that is a good place to start. 
+
+Additionally, the script prints relevant debugging information if it encounters a known issue. 
