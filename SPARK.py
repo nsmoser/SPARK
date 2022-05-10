@@ -5,17 +5,24 @@
 - Uses lab equipment SCPI commandset to measure 
   MOSFET drain current as a function of drain-source
   voltage across multiple gate-source voltages.
-  Test setup uses MOSFET as input resistor in transresistance amp
+  Test setup uses MOSFET as input current in transresistance amp
   configuration with operational amplifier.
   Plots output and dumps to .txt file
 - Necesary equipment: Keysight EDU32212A Waveform Generator
                       Keysight 34470A Multimeter
-- Necessary software: Python 3.10 (duh)
+  NOTE: The software uses these device P/Ns to identify which device is which.
+        If it is desired to use other devices, change P/Ns in identify_device function.
+        Also, double check that the device supports usb connectivity and SCPI commandset.
+- Necessary software: Python 3.10 (any version of python 3 will probably work)
                       pyvisa Library (install via pip)
                       matplotlib library (install via pip)
                       Keysight IO Libraries Suite (download from keysight)
-- WIP:
-  possibly find way to put waveform generator in high-z mode
+- Version 1.1 update:
+  Added recursive algorithm to accomodate resistance between voltage source and MOSFET drain.
+  Outputs difference between voltage set at voltage source and actual V_DS.
+  Finds actual V_DS value based on measured resistance between voltage source and MOSFET drain,
+  then readjusts voltage source to get actual V_DS value within a measurement accuracy tolerance.
+  Changes within get_reading() function.
 """
 import pyvisa                       #needed to communicate with lab equipment 
 import matplotlib.pyplot as plotter #needed to plot measurements
@@ -82,13 +89,14 @@ def identify_device(device,i):
 #sets up waveform generator.
 #sets waveform parameters to good starting values
 #sets all relevant and non-relevant parameters for experiment
-def wg_setup(device,waveform_generator,amplitude):
+def wg_setup(device,waveform_generator):
     print("Waveform Generator Setup in progress...")
     sleep(1)
     freq = 0.000001                 #frequency: 1uHz
     offset = 0                      #offset: 0V
+    amplitude = 0                   #dc amplitude: 0
     phase = 0                       #phase: 0 degrees
-    shape = "SQU"                   #waveform shape: square
+    shape = "DC"                    #waveform shape: dc
     state = 1                       #output state: on
     #clears any present waveform generator errors
     device[waveform_generator].write("*CLS")  
@@ -156,8 +164,14 @@ def vds_setup():
 #gets reading from multimeter
 #returns measured drain current plus associated vds and vgs
 #needs vds and vgs at which measurement is being taken
-#also needs resistor value of feedback network
-def get_reading(device,multimeter,vds,vgs,res):
+#needs resistor value of feedback network
+#set bnc-to-banana impedance and measurement accuracy tolerance here
+#if accuracy tolerance is high, measurements will take a while
+def get_reading(device,multimeter,waveform_generator,vds,new_vds,vgs,res):
+    #set bnc-to-banana adapter impedance here
+    adapter_impedance = 50
+    #set measurement accuracy tolerance in volts here
+    meas_tol = 0.005
     #clear any residual errors
     device[multimeter].write("*CLS")        
     #get reading from multimeter, returns as string
@@ -172,32 +186,46 @@ def get_reading(device,multimeter,vds,vgs,res):
     reading = reading_coeff * (10 ** reading_exp)
     #convert multimeter reading into drain current
     id = abs(reading/res)
-    #create list with id and associated voltages
-    data = [vgs, vds, id]
+    #find the actual vds by subtracting drop across bnc-to-banana adapter from estimated vds
+    vds_actual = new_vds - (id*adapter_impedance)
+    #get difference between estimated and actual vds
+    vds_diff = vds - vds_actual
+    #estimate new output value to get vds within tolerance
+    new_vds = new_vds + vds_diff
+    #if the actual vds is not within the measurement tolerance
+    if vds_diff > meas_tol:
+        #set vds to estimated value to get vds within tolerance
+        set_vds(device,waveform_generator,new_vds)
+        #recursively call measurement function to repeat until within vds tolerance
+        data = get_reading(device,multimeter,waveform_generator,vds,new_vds,vgs,res)
+    #if actual vds is within tolerance
+    else:
+        #return measurements
+        data = [vgs,vds,id,vds_diff]
     return data
 
 #sets vgs of test MOSFET
 #adjusts desired vgs to accomodate 50ohm output mode
 #vgs is on channel 2 of the waveform generator
-def set_vgs(device,waveform_generator,vgs,input_amplitude):
+def set_vgs(device,waveform_generator,vgs):
     #adjust to accomodate 50ohm output mode
-    adjusted_vgs = round((vgs-input_amplitude)/2,3)
+    adjusted_vgs = round(vgs/2,3)
     #set voltage
     device[waveform_generator].write("SOUR2:VOLT:LEV:IMM:OFFS ",str(adjusted_vgs))
 
 #sets vds og test MOSFET
 #adjusts desired vds to accomodate 50ohm output mode
 #vds is on channel 1 of the waveform generator    
-def set_vds(device,waveform_generator,vds,input_amplitude):
+def set_vds(device,waveform_generator,vds):
     #adjust to accomodate 50ohm output mode
-    adjusted_vds = round((vds-input_amplitude)/2,3)
+    adjusted_vds = round(vds/2,4)
     #set voltage
     device[waveform_generator].write("SOUR1:VOLT:LEV:IMM:OFFS ",str(adjusted_vds))
 
 #formats measurements for readability and outputs to .txt file
 #just one line of code, but makes main code more readable
 def write_output(id_reading,output_file):
-    output_file.write("%.2f           %.2f          %.8f\r" % (id_reading[0], id_reading[1], id_reading[2]))
+    output_file.write("%.2f           %.2f          %.8f      %.4f\r" % (id_reading[0], id_reading[1], id_reading[2], id_reading[3]))
 
 #turns off waveform generator channels and closes connections
 #still doesn't seem to actually close connections
@@ -258,7 +286,6 @@ resource_manager = pyvisa.ResourceManager()
 #necessary global variables can be found here
 device = []                             #device object list, used for benchtop instruments
 device_count = 0                        #keeps count of usb devices found
-input_wave_amplitude = 0.002            #minimum amplitude of wave in waveform generator
 vgs_sweep = []                          #vgs_sweep values list
 vds_sweep = []                          #vds_sweep values list
 res = 0                                 #feedback resistor in test setup
@@ -298,27 +325,30 @@ print("Enter measured value of feedback resistor (in ohms)")
 res = float(input())
 
 #set up waveform generator before measurements are performed
-wg_setup(device,waveform_generator,input_wave_amplitude)
+wg_setup(device,waveform_generator)
 
 #actually take measurements of drain current
 #not broken into a function because it would require ~7 arguments
 #line below gives output file a header which identifies data
-output_file.write("V_GS (V)       V_DS (V)      I_D (A)\r")
+output_file.write("V_GS (V)       V_DS (V)      I_D (A)         V_DS difference(V)\r")
 #below code runs through sweep
 #outer iteration sweeps gate->source voltage
 #inner iteration sweeps drain->source voltage
 print("Now measuring. This may take some time.")
+print("If measurement tolerance is high, this will take longer.")
 print("Devices should be making clicking noises.")
-print("If devices are beeping or giving error message, troubleshoot a little before alerting a TA")
+print("If devices are beeping or giving error messages, check that setup ran correctly.")
 for i in range(len(vgs_sweep)):
     #set vgs for following vds sweep
-    set_vgs(device,waveform_generator,vgs_sweep[i],input_wave_amplitude)
+    set_vgs(device,waveform_generator,vgs_sweep[i])
+    sleep(0.1)
     for j in range(len(vds_sweep)):
         #set vds
-        set_vds(device,waveform_generator,vds_sweep[j],input_wave_amplitude)
-        sleep(0.05)         #little bit of time for multimeter to get reading
+        set_vds(device,waveform_generator,vds_sweep[j])
         #gets i_d reading, returns id and associated voltages to list
-        id_reading.append(get_reading(device,multimeter,vds_sweep[j],vgs_sweep[i],res))
+        #sends vds_sweep twice due to recursive algorithm used to get reading
+        #this gives the algorithm a comparison point to decide whether to reiterate
+        id_reading.append(get_reading(device,multimeter,waveform_generator,vds_sweep[j],vds_sweep[j],vgs_sweep[i],res))
         #prints formatted output to output file
         #math in id_reading index keeps track of absolute position within list
         write_output(id_reading[(i*len(vds_sweep))+j],output_file)
