@@ -17,7 +17,7 @@
                       pyvisa Library (install via pip)
                       matplotlib library (install via pip)
                       Keysight IO Libraries Suite (download from keysight)
-- Version 1.1 update:
+- Version 1.2 update:
   Added recursive algorithm to accomodate resistance between voltage source and MOSFET drain.
   Outputs difference between voltage set at voltage source and actual V_DS.
   Finds actual V_DS value based on measured resistance between voltage source and MOSFET drain,
