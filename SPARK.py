@@ -10,14 +10,14 @@
   Plots output and dumps to .txt file
 - Necesary equipment: Keysight EDU32212A Waveform Generator
                       Keysight 34470A Multimeter
-  NOTE: The software uses these device P/Ns to identify which device is which.
-        If it is desired to use other devices, change P/Ns in identify_device function.
-        Also, double check that the device supports usb connectivity and SCPI commandset.
+  NOTE: the software uses these device P/Ns to identify which device is which.
+        if it is desired to use other devices, change P/Ns in identify_device function.
+        also, double check that the device supports usb connectivity and SCPI commandset.
 - Necessary software: Python 3.10 (any version of python 3 will probably work)
                       pyvisa Library (install via pip)
                       matplotlib library (install via pip)
                       Keysight IO Libraries Suite (download from keysight)
-- Version 1.2 update:
+- Version 1.1 update:
   Added recursive algorithm to accomodate resistance between voltage source and MOSFET drain.
   Outputs difference between voltage set at voltage source and actual V_DS.
   Finds actual V_DS value based on measured resistance between voltage source and MOSFET drain,
@@ -69,7 +69,7 @@ def acquire_devices():
 def identify_device(device,i):
     sleep(1)
     device_temp = str(device[i])
-    if device_temp.find("USB") != -1:
+    if device_temp.find("USB") != -1:                   #checks if device is a usb device as all test equipment used is usb
         device_info = device[i].query("*IDN?")          #query which returns device info
         if device_info.find("EDU33212A") != -1:         #if waveform generator P/N is returned
             device_id = "Waveform Generator"            #device is waveform generator
@@ -291,7 +291,6 @@ vds_sweep = []                          #vds_sweep values list
 res = 0                                 #feedback resistor in test setup
 id_reading = []                         #list with drain current reading and associated voltages
 output_file = open("ID_VDS_MEASUREMENTS.txt", "w")  #dump file for measurements
-vos = 0                                 #variable for amplifier offset voltage
 
 #find devices and populate device object list
 device = acquire_devices()
@@ -328,7 +327,7 @@ res = float(input())
 wg_setup(device,waveform_generator)
 
 #actually take measurements of drain current
-#not broken into a function because it would require ~7 arguments
+#not broken into a function because it would require a lot of arguments
 #line below gives output file a header which identifies data
 output_file.write("V_GS (V)       V_DS (V)      I_D (A)         V_DS difference(V)\r")
 #below code runs through sweep
@@ -345,7 +344,7 @@ for i in range(len(vgs_sweep)):
     for j in range(len(vds_sweep)):
         #set vds
         set_vds(device,waveform_generator,vds_sweep[j])
-        #gets i_d reading, returns id and associated voltages to list
+        #gets i_d reading, returns i_d and associated voltages to list
         #sends vds_sweep twice due to recursive algorithm used to get reading
         #this gives the algorithm a comparison point to decide whether to reiterate
         id_reading.append(get_reading(device,multimeter,waveform_generator,vds_sweep[j],vds_sweep[j],vgs_sweep[i],res))
