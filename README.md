@@ -93,6 +93,6 @@ Depending on the measurement accuracy tolerance, this can add significant measur
 - SCPI Multimeter Reference (https://rfmw.em.keysight.com/bihelpfiles/Truevolt/WebHelp/US/Content/_Home_Page/SCPI%20%20Welcome.htm)
 
 ## Debugging Info
-Any debugging for this script can usually be traced back to an issue with PyVISA. The script prints relevant debugging information as it operates and if it encounters a known issue. If any unknown or new issues are encountered, please reach out at nickolasmoser0@gmail.com.
+Any debugging for this script can usually be traced back to an issue with PyVISA. The script prints relevant debugging information as it operates and if it encounters a known issue. If any unknown or new issues are encountered, please reach out at nickolasmoser0@gmail.com
 
 
