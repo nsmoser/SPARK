@@ -67,6 +67,9 @@ Depending on the measurement accuracy tolerance, this can add significant measur
 - MOSFET to test
 - Breadboard or other prototyping platform
 - Operational amplifier (LM324 and TL082 tested)
+- Benchtop power supply
+    - Set Vdd/Vss of operational amplifier
+    - Run additional tests by setting MOSFET bulk voltage
 - Feedback resistor (3.3kohm worked well in testing with op amp Vdd/Vss = +/-10V)
 - Assorted jumper wires as needed
                 
